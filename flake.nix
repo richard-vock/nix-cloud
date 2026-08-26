@@ -110,7 +110,7 @@
       deploy.nodes = {
         nexus = {
           sshUser = "root";
-          hostname = "kulturausbesserungswerk.org";
+          hostname = "damogran.sh";
           sshOpts = [
             "-p"
             "55522"
