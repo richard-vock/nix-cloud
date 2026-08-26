@@ -44,6 +44,7 @@ in
       enabled = true;
       filter = "sshd";
       port = "55522";
+      maxretry = 10;
     };
   };
 
