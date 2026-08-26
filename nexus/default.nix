@@ -9,6 +9,7 @@ let
 in
 {
   imports = [
+    ./services/incus.nix
     # ./services/authentik.nix
     # ./services/gitlab.nix
     # ./services/kaw-web.nix

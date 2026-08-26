@@ -17,7 +17,10 @@ in
     hashedPasswordFile = config.sops.secrets."users/admin/pw".path;
     isNormalUser = true;
     createHome = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = [
+      "incus-admin"
+      "wheel"
+    ];
     openssh.authorizedKeys.keys = keys;
   };
 }
