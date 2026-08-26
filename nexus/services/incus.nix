@@ -1,4 +1,5 @@
 {
+  hosts,
   ...
 }:
 {
@@ -37,6 +38,7 @@
           name = "default";
           config = {
             "security.secureboot" = "false";
+            "limits.memory" = "8GiB";
           };
           devices = {
             eth0 = {
@@ -47,7 +49,20 @@
             root = {
               path = "/";
               pool = "default";
+              size = "100GiB";
               type = "disk";
+            };
+          };
+        }
+        {
+          name = "kaw-prod";
+          config = { };
+          devices = {
+            eth0 = {
+              name = "eth0";
+              network = "incusbr0";
+              type = "nic";
+              "ipv4.address" = hosts.kaw-prod.ip;
             };
           };
         }

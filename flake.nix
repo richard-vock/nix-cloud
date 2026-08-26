@@ -31,11 +31,19 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages."${system}";
+      hosts = {
+        kaw-prod = {
+          domain = "kulturausbesserungswerk.org";
+          ip = "10.0.100.100";
+        };
+      };
       mkSystem =
         name:
         nixpkgs.lib.nixosSystem {
           inherit system;
-          specialArgs = inputs;
+          specialArgs = inputs // {
+            inherit hosts;
+          };
           modules = [
             disko.nixosModules.disko
             sops-nix.nixosModules.sops
@@ -48,7 +56,10 @@
     in
     {
       nixosConfigurations = nixpkgs.lib.attrsets.mergeAttrsList [
-        { nexus = mkSystem "nexus"; }
+        {
+          nexus = mkSystem "nexus";
+          kaw-prod = mkSystem "kaw-prod";
+        }
       ];
 
       devShells."${system}".default = pkgs.mkShell {
@@ -220,8 +231,8 @@
 
       deploy.nodes = {
         nexus = {
-          sshUser = "root";
           hostname = "damogran.sh";
+          sshUser = "root";
           sshOpts = [
             "-p"
             "55522"
@@ -229,6 +240,18 @@
           profiles.system = {
             user = "root";
             path = deploy-rs.lib."${system}".activate.nixos self.nixosConfigurations.nexus;
+          };
+        };
+        kaw-prod = {
+          hostname = hosts.kaw-prod.ip;
+          sshUser = "root";
+          sshOpts = [
+            "-J"
+            "admin@damogran.sh:55522"
+          ];
+          profiles.system = {
+            user = "root";
+            path = deploy-rs.lib."${system}".activate.nixos self.nixosConfigurations.kaw-prod;
           };
         };
       };
