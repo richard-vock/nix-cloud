@@ -55,6 +55,7 @@
         packages = [
           deploy-rs.packages."${system}".default
           nixos-anywhere.packages."${system}".default
+          pkgs.age
           pkgs.openssh
           pkgs.sops
           (pkgs.writeShellScriptBin "provision" ''
@@ -175,6 +176,44 @@
             EOF
 
             echo "installed $pubkey for $account in $instance via $jump_user@$jump_host:$jump_port"
+          '')
+          (pkgs.writeShellScriptBin "init-vm-sops-key" ''
+            #!${pkgs.bash}/bin/bash
+            set -euo pipefail
+
+            instance="''${1:-}"
+            jump_user="''${JUMP_USER:-admin}"
+            jump_host="''${JUMP_HOST:-damogran.sh}"
+            jump_port="''${JUMP_PORT:-55522}"
+
+            if [ -z "$instance" ]; then
+              echo "usage: init-vm-sops-key <incus-instance>" >&2
+              echo "example: init-vm-sops-key kaw-prod" >&2
+              exit 1
+            fi
+
+            printf -v quoted_instance %q "$instance"
+
+            if ssh -p "$jump_port" "$jump_user@$jump_host" \
+              "incus file pull $quoted_instance/var/lib/sops-nix/key.txt -" >/dev/null 2>&1; then
+              echo "$instance already has /var/lib/sops-nix/key.txt" >&2
+              exit 1
+            fi
+
+            key_dir=$(mktemp -d)
+            key_file="$key_dir/key.txt"
+            trap 'rm -rf "$key_dir"' EXIT
+
+            ${pkgs.age}/bin/age-keygen -o "$key_file" >/dev/null
+            recipient=$(${pkgs.age}/bin/age-keygen -y "$key_file")
+
+            ssh -p "$jump_port" "$jump_user@$jump_host" \
+              "incus file push --create-dirs --mode 0600 - $quoted_instance/var/lib/sops-nix/key.txt" \
+              < "$key_file"
+
+            echo "installed /var/lib/sops-nix/key.txt in $instance via $jump_user@$jump_host:$jump_port"
+            echo "age recipient for $instance:"
+            echo "$recipient"
           '')
         ];
       };
