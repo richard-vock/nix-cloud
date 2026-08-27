@@ -11,11 +11,12 @@ let
 in
 {
   imports = [
-    # ./modules/postgres.nix
-    # ./modules/authentik.nix
-    # ./services/authentik.nix
+    ../modules/postgres.nix
+    ../modules/reverse-proxy.nix
+    ../modules/authentik.nix
+    ./services/authentik.nix
     # ./services/gitlab.nix
-    # ./services/kaw-web.nix
+    ./services/kaw-auth.nix
   ];
   boot.kernelParams = [
     "console=ttyS0,115200n8"
@@ -84,6 +85,7 @@ in
         22
         80
         443
+        9000
       ];
       #allowedUDPPorts = [ ];
     };

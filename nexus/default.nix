@@ -9,10 +9,9 @@ let
 in
 {
   imports = [
+    ../modules/reverse-proxy.nix
     ./services/incus.nix
-    # ./services/authentik.nix
-    # ./services/gitlab.nix
-    # ./services/kaw-web.nix
+    ./services/proxies.nix
   ];
   boot.loader.grub = {
     devices = [ "/dev/nvme0n1" ];
