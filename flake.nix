@@ -104,6 +104,78 @@
               age-keygen -y /var/lib/sops-nix/key.txt
             '
           '')
+          (pkgs.writeShellScriptBin "inject-vm-key" ''
+            #!${pkgs.bash}/bin/bash
+            set -euo pipefail
+
+            instance="''${1:-}"
+            pubkey="''${2:-$HOME/.ssh/id_ed25519.pub}"
+            account="''${3:-root}"
+            jump_user="''${JUMP_USER:-admin}"
+            jump_host="''${JUMP_HOST:-damogran.sh}"
+            jump_port="''${JUMP_PORT:-55522}"
+
+            if [ -z "$instance" ]; then
+              echo "usage: inject-vm-key <incus-instance> [pubkey] [account]" >&2
+              echo "example: inject-vm-key nixos-vm" >&2
+              exit 1
+            fi
+
+            if [ ! -r "$pubkey" ]; then
+              echo "public key not readable: $pubkey" >&2
+              exit 1
+            fi
+
+            key=$(cat "$pubkey")
+            printf -v quoted_instance %q "$instance"
+            printf -v quoted_account %q "$account"
+            printf -v quoted_key %q "$key"
+
+            ssh -p "$jump_port" "$jump_user@$jump_host" \
+              "bash -s -- $quoted_instance $quoted_account $quoted_key" <<'EOF'
+            set -euo pipefail
+
+            instance=$1
+            account=$2
+            key=$3
+            workdir=$(mktemp -d)
+            trap 'rm -rf "$workdir"' EXIT
+
+            passwd_file=$workdir/passwd
+            auth_file=$workdir/authorized_keys
+
+            incus file pull "$instance/etc/passwd" "$passwd_file"
+
+            home=
+            while IFS=: read -r name _passwd _uid _gid _gecos dir _shell; do
+              if [ "$name" = "$account" ]; then
+                home=$dir
+                break
+              fi
+            done < "$passwd_file"
+
+            if [ -z "$home" ]; then
+              echo "account not found: $account" >&2
+              exit 1
+            fi
+
+            incus file pull "$instance$home/.ssh/authorized_keys" "$auth_file" 2>/dev/null || touch "$auth_file"
+
+            if ! grep -qxF "$key" "$auth_file"; then
+              printf '%s\n' "$key" >> "$auth_file"
+            fi
+
+            incus file push --create-dirs --mode 0600 "$auth_file" "$instance$home/.ssh/authorized_keys"
+            incus exec "$instance" -- sh -c '
+              set -eu
+              export PATH=/run/current-system/sw/bin:/usr/bin:/bin:$PATH
+              chmod 0700 "$1/.ssh"
+              chown -R "$2" "$1/.ssh"
+            ' sh "$home" "$account"
+            EOF
+
+            echo "installed $pubkey for $account in $instance via $jump_user@$jump_host:$jump_port"
+          '')
         ];
       };
 
