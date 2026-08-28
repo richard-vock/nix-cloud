@@ -15,7 +15,7 @@ in
     ../modules/reverse-proxy.nix
     ../modules/authentik.nix
     ./services/authentik.nix
-    # ./services/gitlab.nix
+    ./services/gitlab.nix
     ./services/kaw-auth.nix
   ];
   boot.kernelParams = [

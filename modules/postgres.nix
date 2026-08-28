@@ -77,7 +77,7 @@ in
 
     services.postgresql = {
       enable = true;
-      package = pkgs.postgresql_16;
+      package = pkgs.postgresql_17;
       ensureDatabases = lib.unique (map (db: db.database) databases);
       ensureUsers = map (db: {
         name = db.user;
