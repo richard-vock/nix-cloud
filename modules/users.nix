@@ -23,4 +23,8 @@ in
     ];
     openssh.authorizedKeys.keys = keys;
   };
+
+  programs.bash.interactiveShellInit = ''
+    set -o vi
+  '';
 }
