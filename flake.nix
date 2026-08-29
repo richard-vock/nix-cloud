@@ -36,6 +36,9 @@
           domain = "kulturausbesserungswerk.org";
           ip = "10.0.100.100";
         };
+        runner = {
+          ip = "10.0.100.101";
+        };
       };
       mkSystem =
         name:
@@ -59,6 +62,7 @@
         {
           nexus = mkSystem "nexus";
           kaw-prod = mkSystem "kaw-prod";
+          runner = mkSystem "runner";
         }
       ];
 
@@ -252,6 +256,19 @@
           profiles.system = {
             user = "root";
             path = deploy-rs.lib."${system}".activate.nixos self.nixosConfigurations.kaw-prod;
+          };
+        };
+
+        runner = {
+          hostname = hosts.runner.ip;
+          sshUser = "root";
+          sshOpts = [
+            "-J"
+            "admin@damogran.sh:55522"
+          ];
+          profiles.system = {
+            user = "root";
+            path = deploy-rs.lib."${system}".activate.nixos self.nixosConfigurations.runner;
           };
         };
       };

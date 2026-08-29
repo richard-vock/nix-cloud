@@ -1,32 +1,23 @@
 {
-  config,
   hosts,
   lib,
   pkgs,
   ...
 }:
 let
-  server = "kaw-prod";
-  domain = hosts.kaw-prod.domain;
-  email = "root@${domain}";
+  server = "runner";
 in
 {
   imports = [
-    ../modules/postgres.nix
-    ../modules/reverse-proxy.nix
-    ../modules/authentik.nix
-    ./services/authentik.nix
-    ./services/gitlab.nix
-    ./services/kaw-auth.nix
-    ./services/kaw-web.nix
+    ./services/gitlab-runner.nix
   ];
+
   boot.kernelParams = [
     "console=ttyS0,115200n8"
     "console=tty0"
   ];
 
   boot.loader.grub = {
-    # without mkForce disko still adds /dev/sda
     devices = lib.mkForce [ "nodev" ];
     efiSupport = true;
     efiInstallAsRemovable = true;
@@ -40,8 +31,8 @@ in
   systemd.services."serial-getty@ttyS0".wantedBy = [ "getty.target" ];
 
   _module.args.server = server;
-  _module.args.domain = domain;
-  _module.args.email = email;
+  _module.args.domain = "local";
+  _module.args.email = "root@${server}.local";
 
   security.sudo.configFile = ''
     Defaults:root,%wheel env_keep+=LOCALE_ARCHIVE
@@ -70,7 +61,6 @@ in
   };
 
   services.resolved.enable = true;
-
   virtualisation.incus.agent.enable = true;
 
   networking = {
@@ -79,19 +69,14 @@ in
       "1.0.0.1#one.one.one.one"
     ];
     hostName = server;
-    domain = domain;
     useNetworkd = true;
     firewall = {
       enable = true;
       allowedTCPPorts = [
         22
-        80
-        443
-        9000
+        55522
       ];
-      #allowedUDPPorts = [ ];
     };
-
   };
 
   systemd.network.networks."50-ethernet" = {
@@ -111,55 +96,15 @@ in
     "@wheel"
   ];
 
-  sops.defaultSopsFile = ../secrets/kaw-prod.yaml;
+  sops.defaultSopsFile = ../secrets/runner.yaml;
   sops.age.keyFile = "/var/lib/sops-nix/key.txt";
 
-  swapDevices = [
-    {
-      device = "/var/lib/swapfile";
-      size = 4096;
-    }
-  ];
-
-  sops.secrets."backup/storagebox_ed25519" = {
-    owner = "root";
-    group = "root";
-    mode = "0400";
-  };
-
-  sops.secrets."users/runner/pw" = {
-    neededForUsers = true;
-  };
-
-  users.users.runner = {
-    name = "runner";
-    group = "users";
-    hashedPasswordFile = config.sops.secrets."users/runner/pw".path;
-    isNormalUser = true;
-    createHome = true;
-    extraGroups = [
-      "kaw-web"
-    ];
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJtufKlrcjFhnMQB6ynhgmeyiPundingeJkrOeVJY/MJ gitlab runner"
-    ];
-  };
-
-  security.sudo.extraRules = [
-    {
-      users = [ "runner" ];
-      commands = [
-        {
-          command = "/run/current-system/sw/bin/systemctl restart kaw-web.service";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-    }
-  ];
-
   environment.systemPackages = with pkgs; [
+    git
     neovim
-    sqlite
+    nodejs_22
+    openssh
+    rsync
     tmux
   ];
 

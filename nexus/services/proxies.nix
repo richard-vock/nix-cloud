@@ -16,4 +16,11 @@
     port = 80;
     letsencrypt = true;
   };
+
+  ingress.kaw-web = {
+    host = hosts.kaw-prod.domain;
+    address = hosts.kaw-prod.ip;
+    port = 3000;
+    letsencrypt = true;
+  };
 }
