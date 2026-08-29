@@ -292,16 +292,46 @@ with lib;
       ]) cfg.apps
     );
 
+    systemd.services.authentik-migrate =
+      let
+        sopsInstallSecretsUnit = lib.optional config.sops.useSystemdActivation "sops-install-secrets.service";
+      in
+      {
+        description = "Run authentik database migrations";
+        after = sopsInstallSecretsUnit ++ [
+          "postgresql.service"
+          "postgresql-set-passwords.service"
+        ];
+        requires = sopsInstallSecretsUnit ++ [
+          "postgresql.service"
+          "postgresql-set-passwords.service"
+        ];
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          User = "authentik";
+          Group = "authentik";
+          EnvironmentFile = "/run/secrets/authentik/env";
+        };
+        environment.AUTHENTIK_HOST = "https://authentik.${domain}/";
+        script = ''
+          set -euo pipefail
+          ${cfg.package}/bin/ak migrate
+        '';
+      };
+
     systemd.services.authentik-server = {
       description = "authentik server";
       after = [
         "network.target"
         "postgresql.service"
         "postgresql-set-passwords.service"
+        "authentik-migrate.service"
       ];
       requires = [
         "postgresql.service"
         "postgresql-set-passwords.service"
+        "authentik-migrate.service"
       ];
       wantedBy = [ "multi-user.target" ];
       path = [ pkgs.bash ];
@@ -336,10 +366,12 @@ with lib;
         "network.target"
         "postgresql.service"
         "postgresql-set-passwords.service"
+        "authentik-migrate.service"
       ];
       requires = [
         "postgresql.service"
         "postgresql-set-passwords.service"
+        "authentik-migrate.service"
       ];
       wantedBy = [ "multi-user.target" ];
       path = [ pkgs.bash ];
@@ -433,11 +465,13 @@ with lib;
         description = "bootstrap managed authentik blueprints";
         after = sopsInstallSecretsUnit ++ [
           "postgresql.service"
+          "authentik-migrate.service"
           "authentik-server.service"
           "authentik-worker.service"
         ];
         requires = sopsInstallSecretsUnit ++ [
           "postgresql.service"
+          "authentik-migrate.service"
           "authentik-server.service"
           "authentik-worker.service"
         ];
