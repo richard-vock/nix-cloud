@@ -66,6 +66,18 @@
             };
           };
         }
+        {
+          name = "runner";
+          config = { };
+          devices = {
+            eth0 = {
+              name = "eth0";
+              network = "incusbr0";
+              type = "nic";
+              "ipv4.address" = hosts.runner.ip;
+            };
+          };
+        }
       ];
     };
   };

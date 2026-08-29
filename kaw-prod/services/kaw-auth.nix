@@ -4,7 +4,7 @@
 }:
 {
   services.authentik.apps."kaw-auth-prod" = {
-    redirectURL = "http://${hosts.kaw-prod.domain}:5173/auth/callback";
+    redirectURL = "https://${hosts.kaw-prod.domain}/auth/callback";
   };
   services.authentik.apps."kaw-auth-dev" = {
     redirectURL = "http://localhost:5173/auth/callback";
