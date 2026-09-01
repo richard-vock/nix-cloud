@@ -66,6 +66,7 @@ in
       enabled = true;
       filter = "sshd";
       port = "22";
+      maxretry = 10;
     };
   };
 
