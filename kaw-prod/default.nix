@@ -16,6 +16,7 @@ in
     ../modules/reverse-proxy.nix
     ../modules/authentik.nix
     ./services/authentik.nix
+    ./services/backup.nix
     ./services/gitlab.nix
     ./services/kaw-auth.nix
     ./services/kaw-web.nix
