@@ -57,6 +57,7 @@
       EVENT_IMAGE_MAX_BYTES = "5242880";
       AUTHENTIK_BASE_URL = "https://authentik.${hosts.kaw-prod.domain}";
       AUTHENTIK_REDIRECT_URL = "https://${hosts.kaw-prod.domain}/auth/callback";
+      BODY_SIZE_LIMIT = "12M";
     };
 
     serviceConfig = {
