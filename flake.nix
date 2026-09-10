@@ -33,7 +33,7 @@
       pkgs = nixpkgs.legacyPackages."${system}";
       hosts = {
         kaw-prod = {
-          domain = "kulturausbesserungswerk.org";
+          domain = "kulturausbesserungswerk.de";
           ip = "10.0.100.100";
         };
         runner = {
