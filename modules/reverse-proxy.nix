@@ -24,6 +24,17 @@ let
         locations."/" = {
           proxyPass = upstream;
           proxyWebsockets = true;
+          recommendedProxySettings = ingress.backendHost == null;
+          extraConfig = lib.optionalString (ingress.backendHost != null) ''
+            proxy_set_header Host ${ingress.backendHost};
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Forwarded-Server $hostname;
+          '' + lib.optionalString (ingress.proxyRedirectFrom != null) ''
+            proxy_redirect ${ingress.proxyRedirectFrom} https://${hostName}/;
+          '';
         };
       };
     };
@@ -65,6 +76,18 @@ with lib;
               type = types.port;
               default = 8080;
               description = "Port of the backend service.";
+            };
+
+            backendHost = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              description = "Host header to send to the backend service. Defaults to the public host name.";
+            };
+
+            proxyRedirectFrom = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              description = "Backend URL prefix in Location headers to rewrite to the public host name.";
             };
 
           };
