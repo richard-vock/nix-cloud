@@ -39,6 +39,10 @@
         runner = {
           ip = "10.0.100.101";
         };
+        damogran = {
+          domain = "damogran.sh";
+          ip = "10.0.100.102";
+        };
       };
       mkSystem =
         name:

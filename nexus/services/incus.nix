@@ -78,6 +78,21 @@
             };
           };
         }
+        {
+          name = "damogran";
+          config = {
+            "security.secureboot" = "false";
+            "limits.memory" = "16GiB";
+          };
+          devices = {
+            eth0 = {
+              name = "eth0";
+              network = "incusbr0";
+              type = "nic";
+              "ipv4.address" = hosts.damogran.ip;
+            };
+          };
+        }
       ];
     };
   };
