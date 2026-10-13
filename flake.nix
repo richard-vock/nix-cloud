@@ -67,6 +67,7 @@
           nexus = mkSystem "nexus";
           kaw-prod = mkSystem "kaw-prod";
           runner = mkSystem "runner";
+          damogran = mkSystem "damogran";
         }
       ];
 
@@ -250,6 +251,7 @@
             path = deploy-rs.lib."${system}".activate.nixos self.nixosConfigurations.nexus;
           };
         };
+
         kaw-prod = {
           hostname = hosts.kaw-prod.ip;
           sshUser = "root";
@@ -273,6 +275,19 @@
           profiles.system = {
             user = "root";
             path = deploy-rs.lib."${system}".activate.nixos self.nixosConfigurations.runner;
+          };
+        };
+
+        damogran = {
+          hostname = hosts.damogran.ip;
+          sshUser = "root";
+          sshOpts = [
+            "-J"
+            "admin@damogran.sh:55522"
+          ];
+          profiles.system = {
+            user = "root";
+            path = deploy-rs.lib."${system}".activate.nixos self.nixosConfigurations.damogran;
           };
         };
       };
