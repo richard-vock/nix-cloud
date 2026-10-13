@@ -3,6 +3,13 @@
   ...
 }:
 {
+  ingress.authentik-damogran = {
+    host = "authentik.${hosts.damogran.domain}";
+    address = hosts.damogran.ip;
+    port = 9000;
+    letsencrypt = true;
+  };
+
   ingress.authentik-kaw-prod = {
     host = "authentik.${hosts.kaw-prod.domain}";
     address = hosts.kaw-prod.ip;
