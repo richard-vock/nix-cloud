@@ -12,8 +12,8 @@ let
 in
 {
   imports = [
-    # ../modules/reverse-proxy.nix
-    # ./services/backup.nix
+    ../modules/hytale-server.nix
+    ./services/hytale-server.nix
   ];
   boot.kernelParams = [
     "console=ttyS0,115200n8"
