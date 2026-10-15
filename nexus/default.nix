@@ -89,6 +89,8 @@ in
   environment.systemPackages = with pkgs; [
     neovim
     tmux
+    htop
+    btop
   ];
 
   system.stateVersion = "26.05";
