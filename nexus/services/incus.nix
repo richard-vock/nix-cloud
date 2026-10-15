@@ -97,7 +97,7 @@
           name = "hytale";
           config = {
             "security.secureboot" = "false";
-            "limits.memory" = "8GiB";
+            "limits.memory" = "12GiB";
           };
           devices = {
             eth0 = {
