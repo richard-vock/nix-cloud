@@ -93,6 +93,21 @@
             };
           };
         }
+        {
+          name = "hytale";
+          config = {
+            "security.secureboot" = "false";
+            "limits.memory" = "8GiB";
+          };
+          devices = {
+            eth0 = {
+              name = "eth0";
+              network = "incusbr0";
+              type = "nic";
+              "ipv4.address" = hosts.hytale.ip;
+            };
+          };
+        }
       ];
     };
   };

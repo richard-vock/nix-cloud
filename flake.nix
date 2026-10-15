@@ -43,6 +43,10 @@
           domain = "damogran.sh";
           ip = "10.0.100.102";
         };
+        hytale = {
+          domain = "hytale.damogran.sh";
+          ip = "10.0.100.109";
+        };
       };
       mkSystem =
         name:
