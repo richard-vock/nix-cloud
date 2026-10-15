@@ -9,6 +9,38 @@ with lib;
 
 let
   cfg = config.services.hytale-server;
+
+  serverArgs = [
+    "--assets"
+    "Assets.zip"
+    "--bind"
+    cfg.bind
+  ]
+  ++ optionals cfg.backup.enable [
+    "--backup"
+    "--backup-dir"
+    "backups"
+    "--backup-frequency"
+    (toString cfg.backup.frequency)
+    "--backup-max-count"
+    (toString cfg.backup.maxCount)
+  ]
+  ++ cfg.extraArgs;
+
+  # Share startup preparation and arguments between systemd and the console.
+  startServer = pkgs.writeShellScript "hytale-start-server" ''
+    set -eu
+    cd ${escapeShellArg (toString cfg.dataDir)}
+    ${pkgs.coreutils}/bin/ln -sf ${escapeShellArg (toString cfg.serverJar)} HytaleServer.jar
+    ${pkgs.coreutils}/bin/ln -sf ${escapeShellArg (toString cfg.assetsZip)} Assets.zip
+
+    aotFile="$(${pkgs.coreutils}/bin/dirname ${escapeShellArg (toString cfg.serverJar)})/HytaleServer.aot"
+    if [ -f "$aotFile" ]; then
+      ${pkgs.coreutils}/bin/ln -sf "$aotFile" HytaleServer.aot
+    fi
+
+    exec ${cfg.package}/bin/java ${cfg.jvmOpts} --enable-native-access=ALL-UNNAMED -jar HytaleServer.jar ${escapeShellArgs serverArgs}
+  '';
 in
 {
   options = {
@@ -101,64 +133,62 @@ in
 
     users.groups.hytale = { };
 
+    environment.systemPackages = [
+      (pkgs.writeShellScriptBin "hytale-run-server" ''
+        set -eu
+        if [ "$EUID" -ne 0 ]; then
+          echo "Run this command as root: sudo hytale-run-server" >&2
+          exit 1
+        fi
+        if [ ! -t 0 ] || [ ! -t 1 ]; then
+          echo "An interactive terminal is required (use ssh -t or tmux)." >&2
+          exit 1
+        fi
+
+        state=$(${pkgs.systemd}/bin/systemctl show --property=ActiveState --value hytale-server.service)
+        case "$state" in
+          inactive|failed) ;;
+          *)
+            echo "Stop the service first: sudo systemctl stop hytale-server" >&2
+            exit 1
+            ;;
+        esac
+
+        # Preserve the terminal, but create files and credentials as the service user.
+        exec ${pkgs.util-linux}/bin/runuser -u hytale -- ${startServer}
+      '')
+    ];
+
     systemd.services.hytale-server = {
       description = "Hytale Dedicated Server";
 
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
 
-      preStart = ''
-        # Symlink server jar and assets into dataDir if not already present
-        ln -sf ${cfg.serverJar} ${cfg.dataDir}/HytaleServer.jar
-        ln -sf ${cfg.assetsZip} ${cfg.dataDir}/Assets.zip
+      serviceConfig = {
+        User = "hytale";
+        Group = "hytale";
+        WorkingDirectory = cfg.dataDir;
 
-        # Copy AOT cache if it exists alongside the jar
-        aotFile="$(dirname ${cfg.serverJar})/HytaleServer.aot"
-        if [ -f "$aotFile" ]; then
-          ln -sf "$aotFile" ${cfg.dataDir}/HytaleServer.aot
-        fi
-      '';
+        ExecStart = "${startServer}";
 
-      serviceConfig =
-        let
-          port = lib.toInt (lib.last (lib.splitString ":" cfg.bind));
+        # Exit code 8 = restart for update
+        RestartForceExitStatus = [ 8 ];
+        SuccessExitStatus = [
+          0
+          8
+        ];
+        Restart = "on-failure";
+        RestartSec = 10;
 
-          backupArgs = optionalString cfg.backup.enable "--backup --backup-dir backups --backup-frequency ${toString cfg.backup.frequency} --backup-max-count ${toString cfg.backup.maxCount}";
-
-          args = concatStringsSep " " (
-            [
-              "--assets Assets.zip"
-              "--bind ${cfg.bind}"
-            ]
-            ++ optional cfg.backup.enable backupArgs
-            ++ cfg.extraArgs
-          );
-
-        in
-        {
-          User = "hytale";
-          Group = "hytale";
-          WorkingDirectory = cfg.dataDir;
-
-          ExecStart = "${cfg.package}/bin/java ${cfg.jvmOpts} --enable-native-access=ALL-UNNAMED -jar HytaleServer.jar ${args}";
-
-          # Exit code 8 = restart for update
-          RestartForceExitStatus = [ 8 ];
-          SuccessExitStatus = [
-            0
-            8
-          ];
-          Restart = "on-failure";
-          RestartSec = 10;
-
-          # Hardening
-          PrivateDevices = true;
-          PrivateTmp = true;
-          ProtectHome = "read-only";
-          ProtectSystem = "strict";
-          ReadWritePaths = [ cfg.dataDir ];
-          NoNewPrivileges = true;
-        };
+        # Hardening
+        PrivateDevices = true;
+        PrivateTmp = true;
+        ProtectHome = "read-only";
+        ProtectSystem = "strict";
+        ReadWritePaths = [ cfg.dataDir ];
+        NoNewPrivileges = true;
+      };
     };
 
     networking.firewall.allowedUDPPorts =
