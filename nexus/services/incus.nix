@@ -106,6 +106,12 @@
               type = "nic";
               "ipv4.address" = hosts.hytale.ip;
             };
+            hytale-udp = {
+              type = "proxy";
+              nat = "true";
+              listen = "udp:168.119.39.234:5520";
+              connect = "udp:${hosts.hytale.ip}:5520";
+            };
           };
         }
       ];
