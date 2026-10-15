@@ -72,6 +72,7 @@
           kaw-prod = mkSystem "kaw-prod";
           runner = mkSystem "runner";
           damogran = mkSystem "damogran";
+          hytale = mkSystem "hytale";
         }
       ];
 
@@ -292,6 +293,19 @@
           profiles.system = {
             user = "root";
             path = deploy-rs.lib."${system}".activate.nixos self.nixosConfigurations.damogran;
+          };
+        };
+
+        hytale = {
+          hostname = hosts.hytale.ip;
+          sshUser = "root";
+          sshOpts = [
+            "-J"
+            "admin@damogran.sh:55522"
+          ];
+          profiles.system = {
+            user = "root";
+            path = deploy-rs.lib."${system}".activate.nixos self.nixosConfigurations.hytale;
           };
         };
       };
