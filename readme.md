@@ -7,7 +7,7 @@ In any case make sure your ssh key is set in the `users.users.root.openssh.autho
 On nexus create a VM/Container and wait for it to get an IP.
 
 ```
-incus launch images:nixos/26.05 [name] --vm
+incus launch images:nixos/26.05 [name] --vm --profile default --profile [name]
 watch watch incus network list-leases incusbr0
 ```
 
