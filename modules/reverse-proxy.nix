@@ -21,6 +21,11 @@ let
       value = {
         enableACME = ingress.letsencrypt;
         forceSSL = ingress.letsencrypt;
+        extraConfig = lib.optionalString ingress.tailscaleOnly ''
+          allow 100.64.0.0/10;
+          allow fd7a:115c:a1e0::/48;
+          deny all;
+        '';
         locations."/" = {
           proxyPass = upstream;
           proxyWebsockets = true;
@@ -76,6 +81,12 @@ with lib;
               type = types.port;
               default = 8080;
               description = "Port of the backend service.";
+            };
+
+            tailscaleOnly = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Only allow clients from Tailscale IPv4 and IPv6 ranges.";
             };
 
             backendHost = mkOption {

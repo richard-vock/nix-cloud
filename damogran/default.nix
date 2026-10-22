@@ -18,6 +18,7 @@ in
     ./services/authentik.nix
     ./services/headscale.nix
     ./services/tailscale.nix
+    ./services/vaultwarden.nix
     # ./services/backup.nix
     # ./services/gitlab.nix
     # ./services/kaw-auth.nix
