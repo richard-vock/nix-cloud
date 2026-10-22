@@ -10,6 +10,13 @@
     letsencrypt = true;
   };
 
+  ingress.headscale-damogran = {
+    host = "headscale.${hosts.damogran.domain}";
+    address = hosts.damogran.ip;
+    port = 8085;
+    letsencrypt = true;
+  };
+
   ingress.authentik-kaw-prod = {
     host = "authentik.${hosts.kaw-prod.domain}";
     address = hosts.kaw-prod.ip;
