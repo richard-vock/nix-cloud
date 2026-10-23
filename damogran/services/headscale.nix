@@ -28,6 +28,16 @@ in
 {
   services.headscale = {
     enable = true;
+    package = pkgs.headscale.overrideAttrs (finalAttrs: _: {
+      version = "0.29.4";
+      src = pkgs.fetchFromGitHub {
+        owner = "juanfont";
+        repo = "headscale";
+        tag = "v${finalAttrs.version}";
+        hash = "sha256-oBl8oQuZ8LUhK6FsGZkTXCJtwqmegmUDreeIILH4wRg=";
+      };
+      vendorHash = "sha256-fzKyXNMw/2yAEhaTZu0n1NXatPO2IP0HFA2ey1vZIYM=";
+    });
     address = listenAddress;
     port = listenPort;
 
