@@ -9,6 +9,31 @@ in
     enable = true;
     # Nixpkgs 0.30.0 builds CSS but omits the editor JavaScript bundle.
     package = pkgs.cook-cli.overrideAttrs (old: {
+      postPatch = (old.postPatch or "") + ''
+        substituteInPlace templates/recipe.html \
+          --replace-fail '<div>' '<div class="recipe-page">'
+        cat >> static/css/custom-styles.css <<'CSS'
+        /* Keep recipe content within the viewport, including standalone PWAs. */
+        .recipe-page {
+            overflow-wrap: anywhere;
+        }
+        .recipe-page .grid > *,
+        .recipe-page .flex > * {
+            min-width: 0;
+        }
+        .recipe-page .ingredient-badge,
+        .recipe-page .cookware-badge,
+        .recipe-page .timer-badge,
+        .recipe-page .metadata-pill {
+            white-space: normal;
+            max-width: 100%;
+        }
+        .recipe-page .breadcrumb ol {
+            flex-wrap: wrap;
+            row-gap: 0.25rem;
+        }
+        CSS
+      '';
       preBuild = (old.preBuild or "") + ''
         npm run build-js
       '';
