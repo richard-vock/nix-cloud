@@ -7,12 +7,30 @@ in
 
   services.cooklang = {
     enable = true;
-    # Nixpkgs 0.30.0 builds CSS but omits the editor JavaScript bundle.
-    package = pkgs.cook-cli.overrideAttrs (old: {
+    # Use the official Nixpkgs 0.38.1 hashes without updating the flake inputs.
+    package = pkgs.cook-cli.overrideAttrs (finalAttrs: old: {
+      version = "0.38.1";
+      src = pkgs.fetchFromGitHub {
+        owner = "cooklang";
+        repo = "cookcli";
+        rev = "v${finalAttrs.version}";
+        hash = "sha256-XvEUpPrkgWxtBoInx6jM0gHF3igZcyf5ykR9Z3wQScc=";
+      };
+      cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
+        inherit (finalAttrs) pname version src;
+        hash = "sha256-gbJo6qzj2c3tzZuEjP8/XxJQjbZrYbjZAWIkqfpwhiM=";
+      };
+      npmDeps = pkgs.fetchNpmDeps {
+        inherit (finalAttrs) src;
+        hash = "sha256-zAtFsSpJFdthb0E8FLVRGWzGcReDsZxZF+NvHZ+wcY4=";
+      };
+      # These were not feature-gated in 0.30; keep self-update disabled.
+      cargoBuildFeatures = [ "server" "import" "lsp" ];
+      cargoCheckFeatures = finalAttrs.cargoBuildFeatures;
       postPatch = (old.postPatch or "") + ''
         substituteInPlace templates/recipe.html \
           --replace-fail '<div>' '<div class="recipe-page">'
-        cat >> static/css/custom-styles.css <<'CSS'
+        cat >> static/css/input.css <<'CSS'
         /* Keep recipe content within the viewport, including standalone PWAs. */
         .recipe-page {
             overflow-wrap: anywhere;
@@ -40,8 +58,11 @@ in
     });
   };
 
-  # CookCLI 0.30 permits arbitrary CORS origins; reject foreign browser origins
-  # at the proxy, while allowing same-origin requests and non-browser clients.
+  # CookCLI 0.38 also checks Host and Origin behind reverse proxies.
+  systemd.services.cooklang.environment.COOK_CORS_ORIGIN = "https://${hostName}";
+
+  # Reject foreign browser origins at the proxy, while allowing same-origin
+  # requests and non-browser clients.
   services.nginx.commonHttpConfig = ''
     map $http_origin $cooklang_origin_allowed {
       default 0;
